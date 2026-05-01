@@ -8,6 +8,7 @@ import companyRoute from "./routes/company.route.js";
 import jobRoute from "./routes/job.route.js";
 import applicationRoute from "./routes/application.route.js";
 import reviewRoute from "./routes/review.route.js";
+import savedJobRoute from "./routes/savedJob.route.js";
 
 dotenv.config({});
 
@@ -18,7 +19,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'https://jobify-ap6r.vercel.app'],
     credentials: true
 }
 
@@ -33,6 +34,7 @@ app.use("/api/v1/company", companyRoute);
 app.use("/api/v1/job", jobRoute);
 app.use("/api/v1/application", applicationRoute);
 app.use("/api/v1/review", reviewRoute);
+app.use("/api/v1/savedjob", savedJobRoute);
 
 
 
