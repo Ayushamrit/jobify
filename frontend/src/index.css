@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 263 62% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 263 30% 95%;
+    --secondary-foreground: 263 62% 30%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 263 30% 95%;
+    --accent-foreground: 263 62% 30%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 263 62% 50%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 263 30% 8%;
+    --foreground: 210 40% 98%;
+    --card: 263 25% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 263 25% 12%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 263 62% 65%;
+    --primary-foreground: 263 30% 8%;
+    --secondary: 263 25% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 263 25% 18%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 263 25% 18%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 263 25% 20%;
+    --input: 263 25% 20%;
+    --ring: 263 62% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* ─── Custom Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #6A38C2;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5b30a6;
+}
+
+/* ─── Glassmorphism Card ─── */
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/40 shadow-xl;
+  }
+  .dark .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  /* ─── Gradient Text ─── */
+  .gradient-text {
+    @apply bg-gradient-to-r from-[#6A38C2] via-[#8B5CF6] to-[#F83002] bg-clip-text text-transparent;
+  }
+
+  /* ─── Hero Gradient Background ─── */
+  .hero-gradient {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  /* ─── Jobify Button Primary ─── */
+  .btn-jobify {
+    @apply bg-gradient-to-r from-[#6A38C2] to-[#8B5CF6] text-white font-semibold
+           px-6 py-2.5 rounded-full shadow-lg hover:shadow-[#6A38C2]/40
+           transition-all duration-300 hover:scale-105 active:scale-95;
+  }
+
+  /* ─── Job Card ─── */
+  .job-card {
+    @apply bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10
+           rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1
+           transition-all duration-300 cursor-pointer overflow-hidden;
+  }
+
+  /* ─── Section Heading ─── */
+  .section-heading {
+    @apply text-4xl font-bold tracking-tight;
+  }
+
+  /* ─── Input Glow ─── */
+  .input-glow {
+    @apply focus:ring-2 focus:ring-[#6A38C2]/30 focus:border-[#6A38C2]
+           transition-all duration-200;
+  }
+
+  /* ─── Badge Variants ─── */
+  .badge-purple {
+    @apply bg-[#6A38C2]/10 text-[#6A38C2] border border-[#6A38C2]/20
+           px-3 py-1 rounded-full text-xs font-semibold;
+  }
+  .badge-coral {
+    @apply bg-[#F83002]/10 text-[#F83002] border border-[#F83002]/20
+           px-3 py-1 rounded-full text-xs font-semibold;
+  }
+  .badge-indigo {
+    @apply bg-indigo-50 text-indigo-700 border border-indigo-200
+           px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  /* ─── Stat Card ─── */
+  .stat-card {
+    @apply flex flex-col items-center justify-center p-6 rounded-2xl
+           bg-white/10 backdrop-blur-sm border border-white/20
+           hover:bg-white/20 transition-all duration-300;
+  }
+
+  /* ─── Nav Link ─── */
+  .nav-link {
+    @apply relative text-sm font-medium text-gray-600 dark:text-gray-300
+           hover:text-[#6A38C2] dark:hover:text-[#8B5CF6] transition-colors duration-200
+           after:content-[''] after:absolute after:-bottom-1 after:left-0
+           after:w-0 after:h-0.5 after:bg-[#6A38C2] after:rounded-full
+           after:transition-all after:duration-300 hover:after:w-full;
+  }
+}
+
+/* ─── Smooth page transitions ─── */
+* {
+  scroll-behavior: smooth;
+}
+
+/* ─── Animate gradient keyframe ─── */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ─── Float animation ─── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
