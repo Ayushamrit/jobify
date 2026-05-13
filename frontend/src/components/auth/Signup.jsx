@@ -78,6 +78,7 @@ const Signup = () => {
 
             if (res.data.success) {
                 dispatch(setUser(res.data.user));
+                localStorage.setItem("jobify-token", res.data.token); // FIX: Store token
                 navigate("/");
                 toast.success(res.data.message);
             }
