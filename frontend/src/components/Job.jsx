@@ -60,8 +60,7 @@ const Job = ({ job }) => {
             if (isSaved) {
                 // Unsave
                 const res = await axios.delete(`${SAVED_JOB_API_END_POINT}/unsave/${job?._id}`, {
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    withCredentials: true
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.data.success) {
                     dispatch(setSavedJobs(savedJobs.filter(s => s.jobId !== job?._id)));
@@ -80,8 +79,7 @@ const Job = ({ job }) => {
                     jobType: job?.jobType,
                     salary: job?.salary,
                 }, {
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    withCredentials: true
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.data.success) {
                     dispatch(setSavedJobs([...savedJobs, res.data.savedJob]));

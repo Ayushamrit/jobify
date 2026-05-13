@@ -14,8 +14,7 @@ const useGetSavedJobs = () => {
             try {
                 const token = localStorage.getItem("jobify-token");
                 const res = await axios.get(`${SAVED_JOB_API_END_POINT}/get`, { 
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    withCredentials: true 
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.data.success) {
                     dispatch(setSavedJobs(res.data.savedJobs));

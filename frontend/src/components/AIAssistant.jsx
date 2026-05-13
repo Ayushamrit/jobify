@@ -85,8 +85,7 @@ const AIAssistant = () => {
                 { 
                     headers: {
                         'Authorization': `Bearer ${token}`
-                    },
-                    withCredentials: true 
+                    }
                 }
             );
             if (res.data.success) {

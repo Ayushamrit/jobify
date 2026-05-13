@@ -18,7 +18,7 @@ const app = express();
 app.set('trust proxy', 1); // Trust the first proxy (Render/Vercel)
 
 const corsOptions = {
-    origin: 'https://jobify-ap2s.vercel.app',
+    origin: true, // Mirror the origin
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
