@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { setSearchedQuery } from '@/redux/jobSlice'
 import { SlidersHorizontal, X } from 'lucide-react'
 
@@ -31,18 +31,25 @@ const filterData = [
 ];
 
 const FilterCard = () => {
-    const [selectedValue, setSelectedValue] = useState('');
     const dispatch = useDispatch();
+    const { searchedQuery } = useSelector(store => store.job);
+    const [selectedValue, setSelectedValue] = useState(searchedQuery);
 
     const changeHandler = (value) => {
-        setSelectedValue(prev => prev === value ? '' : value);
+        const newValue = selectedValue === value ? '' : value;
+        setSelectedValue(newValue);
     }
 
     const clearFilters = () => setSelectedValue('');
 
     useEffect(() => {
         dispatch(setSearchedQuery(selectedValue));
-    }, [selectedValue]);
+    }, [selectedValue, dispatch]);
+
+    // Sync with global searchedQuery (for clearAll or Navbar search)
+    useEffect(() => {
+        setSelectedValue(searchedQuery);
+    }, [searchedQuery]);
 
     return (
         <div className='w-full bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-white/10 overflow-hidden'>

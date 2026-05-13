@@ -190,38 +190,31 @@ export const getAllJobs = async (req, res) => {
         }
 
         // Fetch from all external sources in parallel
-        const [arbeitnowJobs, activeJobs, jsearchJobs] = await Promise.all([
+        const [arbeitnowJobs, activeJobs, jsearchJobs, unstopJobs] = await Promise.all([
             fetchArbeitnowJobs(keyword),
             fetchActiveJobsDB(keyword),
-            fetchJSearchJobs(keyword)
+            fetchJSearchJobs(keyword),
+            fetchUnstopJobs(keyword)
         ]);
 
-        // Filter for India only (except local jobs)
-        const indiaArbeitnow = arbeitnowJobs.filter(job => job.location.toLowerCase().includes('india'));
-        const indiaActiveJobs = activeJobs.filter(job => job.location.toLowerCase().includes('india'));
-        const indiaJSearch = jsearchJobs.filter(job => job.location.toLowerCase().includes('india'));
+        // Combine and show all (portal logic)
+        const indiaUnstop = unstopJobs; // Include all from unstop
+        const indiaJSearch = jsearchJobs; // Already filtered for India in API
+        const indiaArbeitnow = arbeitnowJobs; 
+        const indiaActiveJobs = activeJobs;
 
-        // Fetch Unstop jobs for main feed
-        const unstopJobs = await fetchUnstopJobs(keyword);
-        const indiaUnstop = unstopJobs.filter(job => job.location.toLowerCase().includes('india') || job.location === 'Remote');
-
-        // Combine all jobs - interleave them for better mix
-        const allJobs = [];
-        const maxLength = Math.max(
-            localJobs.length,
-            indiaArbeitnow.length,
-            indiaActiveJobs.length,
-            indiaJSearch.length,
-            indiaUnstop.length
-        );
-
-        for (let i = 0; i < maxLength; i++) {
-            if (localJobs[i]) allJobs.push(localJobs[i]);
-            if (indiaUnstop[i]) allJobs.push(indiaUnstop[i]);
-            if (indiaJSearch[i]) allJobs.push(indiaJSearch[i]);
-            if (indiaArbeitnow[i]) allJobs.push(indiaArbeitnow[i]);
-            if (indiaActiveJobs[i]) allJobs.push(indiaActiveJobs[i]);
-        }
+        // Combine all jobs and SORT by date (newest first)
+        const allJobs = [
+            ...localJobs,
+            ...indiaUnstop,
+            ...indiaJSearch,
+            ...indiaArbeitnow,
+            ...indiaActiveJobs
+        ].sort((a, b) => {
+            const dateB = new Date(b.createdAt || b.posted_at || b.date || 0);
+            const dateA = new Date(a.createdAt || a.posted_at || a.date || 0);
+            return dateB - dateA;
+        });
 
         return res.status(200).json({
             jobs: allJobs,
@@ -361,10 +354,12 @@ export const getPortalJobs = async (req, res) => {
             (source === 'all' || source === 'jsearch') ? fetchJSearchJobs(keyword) : Promise.resolve([]),
         ]);
 
+        const sortFn = (a, b) => new Date(b.createdAt || b.posted_at || b.date || 0) - new Date(a.createdAt || a.posted_at || a.date || 0);
+
         results = {
-            unstop: unstopJobs,
-            arbeitnow: arbeitnowJobs.slice(0, 30),
-            jsearch: jsearchJobs,
+            unstop: unstopJobs.sort(sortFn),
+            arbeitnow: arbeitnowJobs.sort(sortFn).slice(0, 30),
+            jsearch: jsearchJobs.sort(sortFn),
         };
 
         return res.status(200).json({

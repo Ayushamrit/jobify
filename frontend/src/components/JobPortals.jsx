@@ -188,7 +188,9 @@ const JobCard = ({ job, portalColor, portalTextColor, portalBg, portalBorder }) 
             </div>
 
             {/* Description */}
-            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3 flex-1">{job.description}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3 flex-1">
+                {job.description?.replace(/<[^>]*>?/gm, '')}
+            </p>
 
             {/* Skills */}
             {job.requirements?.length > 0 && (

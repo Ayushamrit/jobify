@@ -1,9 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Bookmark, BookmarkCheck, MapPin, Clock, Briefcase, ExternalLink } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
+import axios from 'axios'
+import { SAVED_JOB_API_END_POINT } from '@/utils/constant'
+import { setSavedJobs } from '@/redux/jobSlice'
 
 const sourceStyles = {
     'Unstop': { bg: 'bg-orange-100 text-orange-600 border-orange-200', label: '🟠 Unstop' },
@@ -15,6 +19,15 @@ const sourceStyles = {
 
 const Job = ({ job }) => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const { user } = useSelector(store => store.auth);
+    const { savedJobs } = useSelector(store => store.job);
+    
+    const [isSaved, setIsSaved] = useState(false);
+
+    useEffect(() => {
+        setIsSaved(savedJobs.some(s => s.jobId === job?._id));
+    }, [savedJobs, job?._id]);
 
     const daysAgoFunction = (mongodbTime) => {
         const diff = new Date() - new Date(mongodbTime);
@@ -33,28 +46,49 @@ const Job = ({ job }) => {
     };
     const salaryDisplay = formatSalary(job?.salary);
 
-    const [saved, setSaved] = useState(() => {
-        const bookmarks = JSON.parse(localStorage.getItem('jobify-saved') || '[]');
-        return bookmarks.includes(job?._id);
-    });
-
-    const toggleSave = (e) => {
+    const toggleSave = async (e) => {
         e.stopPropagation();
-        const bookmarks = JSON.parse(localStorage.getItem('jobify-saved') || '[]');
-        let updated;
-        if (saved) {
-            updated = bookmarks.filter(id => id !== job?._id);
-            toast.success('Job removed from saved');
-        } else {
-            updated = [...bookmarks, job?._id];
-            toast.success('Job saved!');
+        if (!user) {
+            toast.error("Please login to save jobs!");
+            return;
         }
-        localStorage.setItem('jobify-saved', JSON.stringify(updated));
-        setSaved(!saved);
+
+        try {
+            if (isSaved) {
+                const res = await axios.delete(`${SAVED_JOB_API_END_POINT}/unsave/${job?._id}`, { withCredentials: true });
+                if (res.data.success) {
+                    dispatch(setSavedJobs(savedJobs.filter(s => s.jobId !== job?._id)));
+                    toast.success('Job removed from saved');
+                }
+            } else {
+                const res = await axios.post(`${SAVED_JOB_API_END_POINT}/save`, {
+                    jobId: job?._id,
+                    title: job?.title,
+                    company: job?.company?.name || 'Unknown',
+                    location: job?.location,
+                    logo: job?.company?.logo,
+                    platform: job?.source || 'Jobify',
+                    applyUrl: job?.applyUrl,
+                    jobType: job?.jobType,
+                    salary: job?.salary
+                }, { withCredentials: true });
+                if (res.data.success) {
+                    dispatch(setSavedJobs([...savedJobs, res.data.savedJob]));
+                    toast.success('Job saved successfully!');
+                }
+            }
+        } catch (error) {
+            console.log(error);
+            toast.error(error.response?.data?.message || "Something went wrong");
+        }
     };
 
     const handleViewDetails = () => {
         if (isExternal && job?.applyUrl) {
+            if (!user) {
+                toast.error("Please login to apply for jobs!");
+                return;
+            }
             window.open(job.applyUrl, '_blank');
         } else {
             navigate(`/description/${job?._id}`);
@@ -81,12 +115,12 @@ const Job = ({ job }) => {
                 </div>
                 <button
                     onClick={toggleSave}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 ${saved
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 ${isSaved
                             ? 'bg-[#6A38C2]/10 text-[#6A38C2]'
                             : 'bg-gray-50 dark:bg-white/5 text-gray-400 hover:text-[#6A38C2] hover:bg-[#6A38C2]/10'
                         }`}
                 >
-                    {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                    {isSaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
                 </button>
             </div>
 
@@ -113,7 +147,9 @@ const Job = ({ job }) => {
             <h2 className="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-[#6A38C2] dark:group-hover:text-[#8B5CF6] transition-colors line-clamp-1">
                 {job?.title}
             </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-4">{job?.description}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-4">
+                {job?.description?.replace(/<[^>]*>?/gm, '')}
+            </p>
 
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-5">
@@ -139,12 +175,12 @@ const Job = ({ job }) => {
                 <Button
                     onClick={toggleSave}
                     size="sm"
-                    className={`rounded-xl font-semibold transition-all duration-200 ${saved
+                    className={`rounded-xl font-semibold transition-all duration-200 ${isSaved
                             ? 'bg-[#6A38C2] text-white hover:bg-[#5b30a6]'
                             : 'bg-gradient-to-r from-[#6A38C2] to-[#8B5CF6] text-white hover:from-[#5b30a6] hover:to-[#7C3AED]'
                         }`}
                 >
-                    {saved ? 'Saved ✓' : 'Save'}
+                    {isSaved ? 'Saved ✓' : 'Save'}
                 </Button>
             </div>
         </motion.div>

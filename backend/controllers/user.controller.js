@@ -22,10 +22,11 @@ export const register = async (req, res) => {
             cloudResponse = await cloudinary.uploader.upload(fileUri.content);
         }
 
-        const user = await User.findOne({ email });
+        // Check if user already exists with this email AND role
+        const user = await User.findOne({ email, role });
         if (user) {
             return res.status(400).json({
-                message: 'User already exist with this email.',
+                message: `User already exists as a ${role === 'student' ? 'Job Seeker' : 'Recruiter'} with this email.`,
                 success: false,
             })
         }
@@ -60,8 +61,20 @@ export const login = async (req, res) => {
                 success: false
             });
         };
-        let user = await User.findOne({ email });
+        
+        // Find user by email AND role
+        let user = await User.findOne({ email, role });
+        
         if (!user) {
+            // Check if user exists with the OTHER role to give better feedback
+            const existingUserWithOtherRole = await User.findOne({ email });
+            if (existingUserWithOtherRole) {
+                return res.status(400).json({
+                    message: `This email is registered as a ${existingUserWithOtherRole.role === 'student' ? 'Job Seeker' : 'Recruiter'}. Please log in with the correct role.`,
+                    success: false,
+                })
+            }
+
             return res.status(400).json({
                 message: "Incorrect email or password.",
                 success: false,
@@ -72,13 +85,6 @@ export const login = async (req, res) => {
             return res.status(400).json({
                 message: "Incorrect email or password.",
                 success: false,
-            })
-        };
-        // check role is correct or not
-        if (role !== user.role) {
-            return res.status(400).json({
-                message: "Account doesn't exist with current role.",
-                success: false
             })
         };
 
@@ -228,9 +234,19 @@ export const googleLogin = async (req, res) => {
             console.warn("Skipping Firebase token verification (Admin SDK not configured).");
         }
 
-        let user = await User.findOne({ email });
+        // Find user by email AND role
+        let user = await User.findOne({ email, role });
 
         if (!user) {
+            // Check if user exists with the OTHER role
+            const existingUserWithOtherRole = await User.findOne({ email });
+            if (existingUserWithOtherRole) {
+                return res.status(400).json({
+                    message: `This Google account is already registered as a ${existingUserWithOtherRole.role === 'student' ? 'Job Seeker' : 'Recruiter'}. Please log in with that role.`,
+                    success: false,
+                })
+            }
+
             // Create new user if not exists
             user = await User.create({
                 fullname,
@@ -241,14 +257,6 @@ export const googleLogin = async (req, res) => {
                     profilePhoto: profilePhoto || ""
                 }
             });
-        } else {
-            // Check if role matches if user already exists
-            if (role !== user.role) {
-                return res.status(400).json({
-                    message: "Account doesn't exist with current role.",
-                    success: false
-                })
-            };
         }
 
         const tokenData = {

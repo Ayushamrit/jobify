@@ -4,11 +4,11 @@ import { Button } from './ui/button'
 import { Label } from './ui/label'
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { APPLICATION_API_END_POINT, JOB_API_END_POINT } from '@/utils/constant';
+import { APPLICATION_API_END_POINT, JOB_API_END_POINT, AI_API_END_POINT } from '@/utils/constant';
 import { setSingleJob } from '@/redux/jobSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
-import { MapPin, Briefcase, Clock, DollarSign, Users, Calendar, CheckCircle2, ArrowLeft, Bookmark, BookmarkCheck, ExternalLink } from 'lucide-react';
+import { MapPin, Briefcase, Clock, DollarSign, Users, Calendar, CheckCircle2, ArrowLeft, Bookmark, BookmarkCheck, ExternalLink, Sparkles, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from './shared/Navbar';
 
@@ -16,16 +16,21 @@ const JobDescription = () => {
     const { singleJob } = useSelector(store => store.job);
     const { user } = useSelector(store => store.auth);
     const isInitiallyApplied = singleJob?.applications?.some(a => a.applicant === user?._id) || false;
-    const [isApplied, setIsApplied] = useState(isInitiallyApplied);
-    const [saved, setSaved] = useState(() => {
-        const bookmarks = JSON.parse(localStorage.getItem('jobify-saved') || '[]');
-        return bookmarks.includes(singleJob?._id);
-    });
-
     const params = useParams();
     const jobId = params.id;
     const dispatch = useDispatch();
     const navigate = useNavigate();
+
+    const { savedJobs } = useSelector(store => store.job);
+    const [isSaved, setIsSaved] = useState(false);
+    const [isApplied, setIsApplied] = useState(isInitiallyApplied);
+
+    useEffect(() => {
+        setIsSaved(savedJobs.some(s => s.jobId === jobId));
+    }, [savedJobs, jobId]);
+
+    const [aiInsight, setAiInsight] = useState("");
+    const [aiLoading, setAiLoading] = useState(false);
 
     const [coverLetter, setCoverLetter] = useState("");
 
@@ -38,6 +43,10 @@ const JobDescription = () => {
     };
 
     const applyJobHandler = async () => {
+        if (!user) {
+            toast.error("Please login to apply for jobs!");
+            return;
+        }
         if (isExternalJob) {
             if (singleJob?.applyUrl) {
                 window.open(singleJob.applyUrl, '_blank');
@@ -57,18 +66,39 @@ const JobDescription = () => {
         }
     }
 
-    const toggleSave = () => {
-        const bookmarks = JSON.parse(localStorage.getItem('jobify-saved') || '[]');
-        let updated;
-        if (saved) {
-            updated = bookmarks.filter(id => id !== singleJob?._id);
-            toast.success('Job removed from saved');
-        } else {
-            updated = [...bookmarks, singleJob?._id];
-            toast.success('Job saved!');
+    const toggleSave = async () => {
+        if (!user) {
+            toast.error("Please login to save jobs!");
+            return;
         }
-        localStorage.setItem('jobify-saved', JSON.stringify(updated));
-        setSaved(!saved);
+        try {
+            if (isSaved) {
+                const res = await axios.delete(`${SAVED_JOB_API_END_POINT}/unsave/${jobId}`, { withCredentials: true });
+                if (res.data.success) {
+                    dispatch(setSavedJobs(savedJobs.filter(s => s.jobId !== jobId)));
+                    toast.success('Job removed from saved');
+                }
+            } else {
+                const res = await axios.post(`${SAVED_JOB_API_END_POINT}/save`, {
+                    jobId: jobId,
+                    title: singleJob?.title,
+                    company: singleJob?.company?.name || 'Unknown',
+                    location: singleJob?.location,
+                    logo: singleJob?.company?.logo,
+                    platform: singleJob?.source || 'Jobify',
+                    applyUrl: singleJob?.applyUrl,
+                    jobType: singleJob?.jobType,
+                    salary: singleJob?.salary
+                }, { withCredentials: true });
+                if (res.data.success) {
+                    dispatch(setSavedJobs([...savedJobs, res.data.savedJob]));
+                    toast.success('Job saved successfully!');
+                }
+            }
+        } catch (error) {
+            console.log(error);
+            toast.error(error.response?.data?.message || "Something went wrong");
+        }
     }
 
     useEffect(() => {
@@ -85,6 +115,28 @@ const JobDescription = () => {
         }
         fetchSingleJob();
     }, [jobId, dispatch, user?._id]);
+
+    useEffect(() => {
+        const fetchAiInsight = async () => {
+            if (!user || !singleJob || aiInsight) return;
+            try {
+                setAiLoading(true);
+                const res = await axios.post(`${AI_API_END_POINT}/job-insights`, {
+                    jobTitle: singleJob.title,
+                    jobDescription: singleJob.description,
+                    jobRequirements: singleJob.requirements?.join(", ")
+                }, { withCredentials: true });
+                if (res.data.success) {
+                    setAiInsight(res.data.insight);
+                }
+            } catch (error) {
+                console.error("AI Insight error:", error);
+            } finally {
+                setAiLoading(false);
+            }
+        }
+        if (singleJob && user) fetchAiInsight();
+    }, [singleJob, user, aiInsight]);
 
     const details = [
         { icon: <MapPin className="w-4 h-4" />, label: 'Location', value: singleJob?.location },
@@ -150,7 +202,9 @@ const JobDescription = () => {
                             <h2 className="font-bold text-lg text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-100 dark:border-white/10">
                                 Job Description
                             </h2>
-                            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-4 whitespace-pre-line">{singleJob?.description}</p>
+                            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-4 whitespace-pre-line">
+                                {singleJob?.description?.replace(/<[^>]*>?/gm, '')}
+                            </p>
                             {!isExternalJob && (
                                 <p className="text-sm text-gray-500"><span className="font-semibold text-gray-700 dark:text-gray-200">Total Applicants:</span> {singleJob?.applications?.length ?? 0}</p>
                             )}
@@ -175,6 +229,28 @@ const JobDescription = () => {
 
                     {/* Sidebar */}
                     <div className="space-y-4">
+                        {/* AI Match Insight */}
+                        {user && (
+                            <div className="bg-gradient-to-br from-[#6A38C2]/5 to-[#8B5CF6]/5 rounded-2xl p-6 shadow-sm border border-[#6A38C2]/20">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6A38C2] to-[#8B5CF6] flex items-center justify-center">
+                                        <Sparkles className="w-4 h-4 text-white" />
+                                    </div>
+                                    <h3 className="font-bold text-gray-900 dark:text-white text-sm">AI Match Insight</h3>
+                                </div>
+                                {aiLoading ? (
+                                    <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                                        <Loader2 className="w-4 h-4 animate-spin text-[#6A38C2]" />
+                                        Analyzing your fit...
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed italic">
+                                        "{aiInsight || "No insight available for this role yet."}"
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         {/* Apply Panel */}
                         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10 sticky top-24">
                             <h3 className="font-bold text-gray-900 dark:text-white mb-4">Apply for this role</h3>
@@ -209,13 +285,15 @@ const JobDescription = () => {
                             <button
                                 onClick={toggleSave}
                                 className={`w-full rounded-xl py-2.5 text-sm font-semibold border flex items-center justify-center gap-2 transition-all duration-200 ${
-                                    saved
+                                    isSaved
                                         ? 'bg-[#6A38C2]/10 border-[#6A38C2]/30 text-[#6A38C2]'
                                         : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-[#6A38C2] hover:text-[#6A38C2]'
                                 }`}
                             >
-                                {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-                                {saved ? 'Saved' : 'Save Job'}
+                                {isSaved ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                                <span className="font-semibold text-sm">
+                                    {isSaved ? 'Saved' : 'Save'}
+                                </span>
                             </button>
 
                             {/* Job Details */}

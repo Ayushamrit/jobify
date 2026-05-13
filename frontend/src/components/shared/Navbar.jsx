@@ -116,6 +116,9 @@ const Navbar = () => {
                                 <PopoverTrigger asChild>
                                     <Avatar className="cursor-pointer ring-2 ring-[#6A38C2]/30 hover:ring-[#6A38C2] transition-all duration-200 hover:scale-105">
                                         <AvatarImage src={user?.profile?.profilePhoto} alt={user?.fullname} />
+                                        <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-[#6A38C2] to-[#8B5CF6] text-white font-bold text-sm">
+                                            {user?.fullname?.[0]?.toUpperCase() || 'U'}
+                                        </div>
                                     </Avatar>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-80 p-0 border-0 shadow-2xl rounded-2xl overflow-hidden dark:bg-gray-900">

@@ -8,11 +8,13 @@ import HowItWorks from './HowItWorks'
 import Testimonials from './Testimonials'
 import BackToTop from './BackToTop'
 import useGetAllJobs from '@/hooks/useGetAllJobs'
+import useGetSavedJobs from '@/hooks/useGetSavedJobs'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 
 const Home = () => {
   useGetAllJobs();
+  useGetSavedJobs();
   const { user } = useSelector(store => store.auth);
   const navigate = useNavigate();
   useEffect(() => {

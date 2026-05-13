@@ -1,3 +1,4 @@
+import React from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Navbar from './components/shared/Navbar'
 import Login from './components/auth/Login'
@@ -10,7 +11,7 @@ import JobDescription from './components/JobDescription'
 import Companies from './components/admin/Companies'
 import CompanyCreate from './components/admin/CompanyCreate'
 import CompanySetup from './components/admin/CompanySetup'
-import AdminJobs from "./components/admin/AdminJobs";
+import AdminJobs from "./components/admin/AdminJobs"
 import PostJob from './components/admin/PostJob'
 import Applicants from './components/admin/Applicants'
 import ProtectedRoute from './components/admin/ProtectedRoute'
@@ -19,6 +20,7 @@ import Candidates from './components/admin/Candidates'
 import CompanyDetails from './components/CompanyDetails'
 import JobPortals from './components/JobPortals'
 import Dashboard from './components/Dashboard'
+import AIAssistant from './components/AIAssistant'
 
 const appRouter = createBrowserRouter([
   {
@@ -65,7 +67,6 @@ const appRouter = createBrowserRouter([
     path: "/portals",
     element: <JobPortals />
   },
-  // Admin routes
   {
     path: "/admin/companies",
     element: <ProtectedRoute><Companies /></ProtectedRoute>
@@ -100,6 +101,7 @@ function App() {
   return (
     <div>
       <RouterProvider router={appRouter} />
+      <AIAssistant />
     </div>
   )
 }

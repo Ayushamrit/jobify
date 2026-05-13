@@ -9,6 +9,7 @@ import jobRoute from "./routes/job.route.js";
 import applicationRoute from "./routes/application.route.js";
 import reviewRoute from "./routes/review.route.js";
 import savedJobRoute from "./routes/savedJob.route.js";
+import aiRoute from "./routes/ai.route.js";
 
 dotenv.config({});
 
@@ -34,7 +35,8 @@ app.use("/api/v1/company", companyRoute);
 app.use("/api/v1/job", jobRoute);
 app.use("/api/v1/application", applicationRoute);
 app.use("/api/v1/review", reviewRoute);
-app.use("/api/v1/savedjob", savedJobRoute);
+app.use("/api/v1/saved-job", savedJobRoute);
+app.use("/api/v1/ai", aiRoute);
 
 
 

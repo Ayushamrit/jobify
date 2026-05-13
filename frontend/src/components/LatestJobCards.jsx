@@ -64,7 +64,9 @@ const LatestJobCards = ({ job }) => {
             <h2 className="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-[#6A38C2] dark:group-hover:text-[#8B5CF6] transition-colors">
                 {job?.title}
             </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-4">{job?.description}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-4">
+                {job?.description?.replace(/<[^>]*>?/gm, '')}
+            </p>
 
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
