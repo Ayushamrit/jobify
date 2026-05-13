@@ -33,6 +33,7 @@ const Login = () => {
             });
             if (res.data.success) {
                 dispatch(setUser(res.data.user));
+                localStorage.setItem("jobify-token", res.data.token); // Store token
                 navigate("/");
                 toast.success(res.data.message);
             }
@@ -67,6 +68,7 @@ const Login = () => {
 
             if (res.data.success) {
                 dispatch(setUser(res.data.user));
+                localStorage.setItem("jobify-token", res.data.token); // Store token
                 navigate("/");
                 toast.success(res.data.message);
             }
