@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Navbar from './shared/Navbar'
 import FilterCard from './FilterCard'
 import Job from './Job';
@@ -6,30 +6,71 @@ import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlidersHorizontal } from 'lucide-react';
 import useGetAllJobs from '@/hooks/useGetAllJobs';
+import { JobSkeletonGrid } from './shared/JobSkeleton';
 
 const Jobs = () => {
     useGetAllJobs();
-    const { allJobs, searchedQuery } = useSelector(store => store.job);
-    const [filterJobs, setFilterJobs] = useState(allJobs);
+
+    // Safe defaults — filters may be undefined if old persisted state loaded
+    const allJobs = useSelector(store => store.job.allJobs) || [];
+    const searchedQuery = useSelector(store => store.job.searchedQuery) || '';
+    const isLoading = useSelector(store => store.job.isLoading) || false;
+    const filters = useSelector(store => store.job.filters) || {};
+
     const [showFilter, setShowFilter] = useState(false);
 
-    useEffect(() => {
+    // Apply all active filters client-side with AND logic
+    const filterJobs = useMemo(() => {
+        let jobs = [...allJobs];
+
         if (searchedQuery) {
-            const filteredJobs = allJobs.filter((job) => {
-                const query = searchedQuery.toLowerCase();
-                return job?.title?.toLowerCase().includes(query) ||
-                    job?.description?.toLowerCase().includes(query) ||
-                    job?.location?.toLowerCase().includes(query) ||
-                    job?.jobType?.toLowerCase().includes(query) ||
-                    job?.workMode?.toLowerCase().includes(query) ||
-                    job?.source?.toLowerCase().includes(query) || // Search by source portal
-                    job?.salary?.toString().includes(query);
-            });
-            setFilterJobs(filteredJobs);
-        } else {
-            setFilterJobs(allJobs);
+            const q = searchedQuery.toLowerCase();
+            jobs = jobs.filter(job =>
+                job?.title?.toLowerCase().includes(q) ||
+                job?.description?.toLowerCase().includes(q) ||
+                job?.location?.toLowerCase().includes(q) ||
+                job?.jobType?.toLowerCase().includes(q) ||
+                job?.source?.toLowerCase().includes(q)
+            );
         }
-    }, [allJobs, searchedQuery]);
+
+        if (filters.location) {
+            const loc = filters.location.toLowerCase();
+            jobs = jobs.filter(job => job?.location?.toLowerCase().includes(loc));
+        }
+
+        if (filters.role) {
+            const role = filters.role.toLowerCase();
+            jobs = jobs.filter(job =>
+                job?.title?.toLowerCase().includes(role) ||
+                job?.description?.toLowerCase().includes(role)
+            );
+        }
+
+        if (filters.jobType) {
+            jobs = jobs.filter(job =>
+                job?.jobType?.toLowerCase() === filters.jobType.toLowerCase()
+            );
+        }
+
+        if (filters.workMode) {
+            jobs = jobs.filter(job =>
+                job?.workMode?.toLowerCase() === filters.workMode.toLowerCase()
+            );
+        }
+
+        if (filters.source) {
+            const src = filters.source.toLowerCase();
+            jobs = jobs.filter(job =>
+                job?.source?.toLowerCase() === src ||
+                (!job?.source && src === 'internal')
+            );
+        }
+
+        return jobs;
+    }, [allJobs, searchedQuery, filters]);
+
+    const activeFilterCount = Object.values(filters).filter(v => v).length;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -39,19 +80,24 @@ const Jobs = () => {
                 {/* Page Header */}
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            All Jobs
-                        </h1>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Jobs</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {filterJobs.length} opportunit{filterJobs.length !== 1 ? 'ies' : 'y'} found
+                            {isLoading
+                                ? 'Loading opportunities...'
+                                : `${filterJobs.length} opportunit${filterJobs.length !== 1 ? 'ies' : 'y'} found`}
                         </p>
                     </div>
-                    {/* Mobile filter toggle */}
                     <button
                         onClick={() => setShowFilter(!showFilter)}
                         className="md:hidden flex items-center gap-2 bg-[#6A38C2]/10 text-[#6A38C2] px-4 py-2 rounded-xl text-sm font-semibold"
                     >
-                        <SlidersHorizontal className="w-4 h-4" /> Filters
+                        <SlidersHorizontal className="w-4 h-4" />
+                        Filters
+                        {activeFilterCount > 0 && (
+                            <span className="bg-[#6A38C2] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                {activeFilterCount}
+                            </span>
+                        )}
                     </button>
                 </div>
 
@@ -65,12 +111,18 @@ const Jobs = () => {
 
                     {/* Jobs Grid */}
                     <div className="flex-1">
-                        {filterJobs.length === 0 ? (
-                            <div className="text-center py-24">
+                        {isLoading ? (
+                            <JobSkeletonGrid count={6} />
+                        ) : filterJobs.length === 0 ? (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="text-center py-24"
+                            >
                                 <div className="text-7xl mb-5">🔍</div>
                                 <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">No Jobs Found</h3>
                                 <p className="text-gray-400 text-sm">Try adjusting your filters or search terms.</p>
-                            </div>
+                            </motion.div>
                         ) : (
                             <div className='grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5'>
                                 <AnimatePresence>
@@ -80,7 +132,7 @@ const Jobs = () => {
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            transition={{ duration: 0.3, delay: index * 0.05 }}
+                                            transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.4) }}
                                         >
                                             <Job job={job} />
                                         </motion.div>
@@ -92,7 +144,7 @@ const Jobs = () => {
                 </div>
             </div>
         </div>
-    )
+    );
 }
 
 export default Jobs

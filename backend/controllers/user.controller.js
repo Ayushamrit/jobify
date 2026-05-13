@@ -22,7 +22,7 @@ export const register = async (req, res) => {
             cloudResponse = await cloudinary.uploader.upload(fileUri.content);
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email, role });
         if (user) {
             return res.status(400).json({
                 message: 'User already exist with this email.',
@@ -60,8 +60,17 @@ export const login = async (req, res) => {
                 success: false
             });
         };
-        let user = await User.findOne({ email });
+        let user = await User.findOne({ email, role });
         if (!user) {
+            // check if user exists with any other role to provide better feedback
+            const userWithOtherRole = await User.findOne({ email });
+            if (userWithOtherRole) {
+                return res.status(400).json({
+                    message: `This account is registered as a ${userWithOtherRole.role === 'student' ? 'Job Seeker' : 'Recruiter'}. Please select the correct role.`,
+                    success: false,
+                    existingRole: userWithOtherRole.role
+                });
+            }
             return res.status(400).json({
                 message: "Incorrect email or password.",
                 success: false,
@@ -72,13 +81,6 @@ export const login = async (req, res) => {
             return res.status(400).json({
                 message: "Incorrect email or password.",
                 success: false,
-            })
-        };
-        // check role is correct or not
-        if (role !== user.role) {
-            return res.status(400).json({
-                message: "Account doesn't exist with current role.",
-                success: false
             })
         };
 
@@ -228,28 +230,29 @@ export const googleLogin = async (req, res) => {
             console.warn("Skipping Firebase token verification (Admin SDK not configured).");
         }
 
-        let user = await User.findOne({ email });
+        const effectiveFullname = fullname || email.split('@')[0];
+        let user = await User.findOne({ email, role });
+
+        console.log(`Google Login attempt for: ${email}, role: ${role}, userExists: ${!!user}`);
 
         if (!user) {
-            // Create new user if not exists
+            // Create new user for this specific role if not exists
             user = await User.create({
-                fullname,
+                fullname: effectiveFullname,
                 email,
                 phoneNumber: 0, // Placeholder for Google users
                 role,
+                isGoogleUser: true,
                 profile: {
                     profilePhoto: profilePhoto || ""
                 }
             });
+            console.log(`New Google user created: ${email} with role ${role}`);
         } else {
-            // Check if role matches if user already exists
-            if (role !== user.role) {
-                return res.status(400).json({
-                    message: "Account doesn't exist with current role.",
-                    success: false
-                })
-            };
+            console.log(`Existing user logged in via Google: ${email} (Role: ${user.role})`);
         }
+        // No longer auto-switching or ignoring role mismatch here,
+        // because now we allow separate accounts for each role.
 
         const tokenData = {
             userId: user._id
@@ -265,8 +268,10 @@ export const googleLogin = async (req, res) => {
             profile: user.profile
         }
 
+        console.log(`Google Login successful for: ${user.email} (Role: ${user.role})`);
+
         return res.status(200).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'strict' }).json({
-            message: `Welcome back ${user.fullname}`,
+            message: `Welcome ${user.fullname}!`,
             user: userData,
             success: true
         })

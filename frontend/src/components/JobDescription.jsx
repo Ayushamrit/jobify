@@ -4,11 +4,11 @@ import { Button } from './ui/button'
 import { Label } from './ui/label'
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { APPLICATION_API_END_POINT, JOB_API_END_POINT } from '@/utils/constant';
+import { APPLICATION_API_END_POINT, JOB_API_END_POINT, AI_API_END_POINT } from '@/utils/constant';
 import { setSingleJob } from '@/redux/jobSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
-import { MapPin, Briefcase, Clock, DollarSign, Users, Calendar, CheckCircle2, ArrowLeft, Bookmark, BookmarkCheck, ExternalLink } from 'lucide-react';
+import { MapPin, Briefcase, Clock, DollarSign, Users, Calendar, CheckCircle2, ArrowLeft, Bookmark, BookmarkCheck, ExternalLink, Sparkles, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from './shared/Navbar';
 
@@ -19,8 +19,10 @@ const JobDescription = () => {
     const [isApplied, setIsApplied] = useState(isInitiallyApplied);
     const [saved, setSaved] = useState(() => {
         const bookmarks = JSON.parse(localStorage.getItem('jobify-saved') || '[]');
-        return bookmarks.includes(singleJob?._id);
+        return bookmarks.includes(params.id);
     });
+    const [aiInsight, setAiInsight] = useState("");
+    const [aiLoading, setAiLoading] = useState(false);
 
     const params = useParams();
     const jobId = params.id;
@@ -85,6 +87,28 @@ const JobDescription = () => {
         }
         fetchSingleJob();
     }, [jobId, dispatch, user?._id]);
+
+    useEffect(() => {
+        const fetchAiInsight = async () => {
+            if (!user || !singleJob || aiInsight) return;
+            try {
+                setAiLoading(true);
+                const res = await axios.post(`${AI_API_END_POINT}/job-insights`, {
+                    jobTitle: singleJob.title,
+                    jobDescription: singleJob.description,
+                    jobRequirements: singleJob.requirements?.join(", ")
+                }, { withCredentials: true });
+                if (res.data.success) {
+                    setAiInsight(res.data.insight);
+                }
+            } catch (error) {
+                console.error("AI Insight error:", error);
+            } finally {
+                setAiLoading(false);
+            }
+        }
+        if (singleJob && user) fetchAiInsight();
+    }, [singleJob, user, aiInsight]);
 
     const details = [
         { icon: <MapPin className="w-4 h-4" />, label: 'Location', value: singleJob?.location },
@@ -175,6 +199,28 @@ const JobDescription = () => {
 
                     {/* Sidebar */}
                     <div className="space-y-4">
+                        {/* AI Match Insight */}
+                        {user && (
+                            <div className="bg-gradient-to-br from-[#6A38C2]/5 to-[#8B5CF6]/5 rounded-2xl p-6 shadow-sm border border-[#6A38C2]/20">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6A38C2] to-[#8B5CF6] flex items-center justify-center">
+                                        <Sparkles className="w-4 h-4 text-white" />
+                                    </div>
+                                    <h3 className="font-bold text-gray-900 dark:text-white text-sm">AI Match Insight</h3>
+                                </div>
+                                {aiLoading ? (
+                                    <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                                        <Loader2 className="w-4 h-4 animate-spin text-[#6A38C2]" />
+                                        Analyzing your fit...
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed italic">
+                                        "{aiInsight || "No insight available for this role yet."}"
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         {/* Apply Panel */}
                         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10 sticky top-24">
                             <h3 className="font-bold text-gray-900 dark:text-white mb-4">Apply for this role</h3>

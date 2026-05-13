@@ -7,12 +7,15 @@ const userSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: true,
-        unique: true
+        required: true
     },
     phoneNumber: {
         type: Number,
-        required: true
+        default: 0
+    },
+    isGoogleUser: {
+        type: Boolean,
+        default: false
     },
     password: {
         type: String
@@ -50,4 +53,6 @@ const userSchema = new mongoose.Schema({
         linkedin: { type: String }
     },
 }, { timestamps: true });
-export const User = mongoose.model('User', userSchema);
+userSchema.index({ email: 1, role: 1 }, { unique: true });
+
+export const User = mongoose.model('User', userSchema);
