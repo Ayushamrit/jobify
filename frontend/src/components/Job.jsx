@@ -26,7 +26,9 @@ const Job = ({ job }) => {
     const [isSaved, setIsSaved] = useState(false);
 
     useEffect(() => {
-        setIsSaved(savedJobs.some(s => s.jobId === job?._id));
+        if (savedJobs && Array.isArray(savedJobs)) {
+            setIsSaved(savedJobs.some(s => s.jobId === job?._id));
+        }
     }, [savedJobs, job?._id]);
 
     const daysAgoFunction = (mongodbTime) => {

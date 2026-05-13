@@ -26,7 +26,9 @@ const JobDescription = () => {
     const [isApplied, setIsApplied] = useState(isInitiallyApplied);
 
     useEffect(() => {
-        setIsSaved(savedJobs.some(s => s.jobId === jobId));
+        if (savedJobs && Array.isArray(savedJobs)) {
+            setIsSaved(savedJobs.some(s => s.jobId === jobId));
+        }
     }, [savedJobs, jobId]);
 
     const [aiInsight, setAiInsight] = useState("");
