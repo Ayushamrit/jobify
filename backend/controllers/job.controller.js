@@ -189,12 +189,12 @@ export const getAllJobs = async (req, res) => {
             console.log("Database fetch failed, continuing with external APIs");
         }
 
-        // Fetch from all external sources in parallel
+        // Fetch from all external sources in parallel with error handling for each
         const [arbeitnowJobs, activeJobs, jsearchJobs, unstopJobs] = await Promise.all([
-            fetchArbeitnowJobs(keyword),
-            fetchActiveJobsDB(keyword),
-            fetchJSearchJobs(keyword),
-            fetchUnstopJobs(keyword)
+            fetchArbeitnowJobs(keyword).catch(err => { console.log("Arbeitnow error:", err.message); return []; }),
+            fetchActiveJobsDB(keyword).catch(err => { console.log("ActiveJobsDB error:", err.message); return []; }),
+            fetchJSearchJobs(keyword).catch(err => { console.log("JSearch error:", err.message); return []; }),
+            fetchUnstopJobs(keyword).catch(err => { console.log("Unstop error:", err.message); return []; })
         ]);
 
         // Combine and show all (portal logic)
