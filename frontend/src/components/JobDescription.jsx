@@ -74,13 +74,19 @@ const JobDescription = () => {
             return;
         }
         try {
+            const token = localStorage.getItem("jobify-token");
             if (isSaved) {
-                const res = await axios.delete(`${SAVED_JOB_API_END_POINT}/unsave/${jobId}`, { withCredentials: true });
+                // Unsave
+                const res = await axios.delete(`${SAVED_JOB_API_END_POINT}/unsave/${jobId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    withCredentials: true
+                });
                 if (res.data.success) {
                     dispatch(setSavedJobs(savedJobs.filter(s => s.jobId !== jobId)));
-                    toast.success('Job removed from saved');
+                    toast.success(res.data.message);
                 }
             } else {
+                // Save
                 const res = await axios.post(`${SAVED_JOB_API_END_POINT}/save`, {
                     jobId: jobId,
                     title: singleJob?.title,
@@ -91,10 +97,13 @@ const JobDescription = () => {
                     applyUrl: singleJob?.applyUrl,
                     jobType: singleJob?.jobType,
                     salary: singleJob?.salary
-                }, { withCredentials: true });
+                }, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    withCredentials: true
+                });
                 if (res.data.success) {
                     dispatch(setSavedJobs([...savedJobs, res.data.savedJob]));
-                    toast.success('Job saved successfully!');
+                    toast.success(res.data.message);
                 }
             }
         } catch (error) {
