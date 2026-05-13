@@ -15,19 +15,28 @@ dotenv.config({});
 
 const app = express();
 
-app.set('trust proxy', 1); // Trust the first proxy (Render/Vercel)
-
+// 1. CORS should be the VERY FIRST middleware
 const corsOptions = {
-    origin: true, // Mirror the origin
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handle preflight
 
-// middleware
+// 2. Explicitly handle OPTIONS preflight requests
+app.options('*', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.sendStatus(200);
+});
+
+app.set('trust proxy', 1); 
+
+// 3. Other middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

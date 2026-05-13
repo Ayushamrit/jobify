@@ -85,7 +85,8 @@ const AIAssistant = () => {
                 { 
                     headers: {
                         'Authorization': `Bearer ${token}`
-                    }
+                    },
+                    timeout: 15000 // 15 seconds timeout
                 }
             );
             if (res.data.success) {
