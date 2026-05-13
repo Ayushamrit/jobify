@@ -1,32 +1,6 @@
 import { Job } from "../models/job.model.js";
 
-// --- Utility: strip HTML tags ---
-const stripHtmlTags = (str) => {
-    if (!str) return "";
-    return str.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
-};
-
-// --- Utility: race any async fn against a timeout ---
-const withTimeout = (promise, ms = 6000) =>
-    Promise.race([
-        promise,
-        new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')), ms)
-        )
-    ]);
-
-// --- In-memory cache: avoid re-hitting external APIs on every page load ---
-const cache = new Map();
-const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
-
-const getCached = (key) => {
-    const entry = cache.get(key);
-    if (entry && Date.now() - entry.ts < CACHE_TTL_MS) return entry.data;
-    return null;
-};
-const setCache = (key, data) => cache.set(key, { data, ts: Date.now() });
-
-
+// admin post krega job
 export const postJob = async (req, res) => {
     try {
         const { title, description, requirements, salary, location, jobType, experience, position, companyId, workMode, perks, applicationDeadline } = req.body;
@@ -77,7 +51,7 @@ const fetchArbeitnowJobs = async (keyword) => {
         const externalJobs = (data.data || []).map((item, index) => ({
             _id: `ext_an_${index}_${item.slug || index}`,
             title: item.title || "Untitled Job",
-            description: stripHtmlTags(item.description || "No description provided."),
+            description: item.description || "No description provided.",
             requirements: item.tags || [],
             salary: "N/A",
             experienceLevel: 0,
@@ -129,7 +103,7 @@ const fetchActiveJobsDB = async (keyword) => {
         return jobs.map((item, index) => ({
             _id: `ext_aj_${index}_${item.id || item.job_id || index}`,
             title: item.title || item.job_title || "Untitled Job",
-            description: stripHtmlTags(item.description || item.job_description || "No description provided."),
+            description: item.description || item.job_description || "No description provided.",
             requirements: item.tags || [item.category].filter(Boolean) || [],
             salary: item.salary || "N/A",
             experienceLevel: 0,
@@ -173,7 +147,7 @@ const fetchJSearchJobs = async (keyword) => {
         return jobsArray.map((item) => ({
             _id: `ext_js_${item.job_id}`,
             title: item.job_title || "Untitled Job",
-            description: stripHtmlTags(item.job_description || "No description provided."),
+            description: item.job_description || "No description provided.",
             requirements: item.job_highlights?.Qualifications || [],
             salary: item.job_min_salary ? `${item.job_min_salary} - ${item.job_max_salary}` : "N/A",
             experienceLevel: item.job_required_experience?.required_experience_in_months / 12 || 0,
@@ -199,14 +173,6 @@ const fetchJSearchJobs = async (keyword) => {
 export const getAllJobs = async (req, res) => {
     try {
         const keyword = req.query.keyword || "";
-        const cacheKey = `jobs_${keyword}`;
-
-        // Return cached results if fresh (2 min TTL)
-        const cached = getCached(cacheKey);
-        if (cached) {
-            return res.status(200).json({ jobs: cached, success: true });
-        }
-
         const query = {
             $or: [
                 { title: { $regex: keyword, $options: "i" } },
@@ -214,54 +180,53 @@ export const getAllJobs = async (req, res) => {
             ]
         };
 
-        // Fetch local DB + all external APIs with timeout protection
         let localJobs = [];
         try {
-            localJobs = await Job.find(query).populate({ path: "company" }).sort({ createdAt: -1 });
+            localJobs = await Job.find(query).populate({
+                path: "company"
+            }).sort({ createdAt: -1 });
         } catch (dbError) {
             console.log("Database fetch failed, continuing with external APIs");
         }
 
-        // Use allSettled so one failing API doesn't kill the response
-        const results = await Promise.allSettled([
-            withTimeout(fetchArbeitnowJobs(keyword), 6000),
-            withTimeout(fetchActiveJobsDB(keyword), 6000),
-            withTimeout(fetchJSearchJobs(keyword), 6000),
-            withTimeout(fetchUnstopJobs(keyword), 6000),
+        // Fetch from all external sources in parallel
+        const [arbeitnowJobs, activeJobs, jsearchJobs] = await Promise.all([
+            fetchArbeitnowJobs(keyword),
+            fetchActiveJobsDB(keyword),
+            fetchJSearchJobs(keyword)
         ]);
 
-        const [arbeitnowRes, activeRes, jsearchRes, unstopRes] = results;
-
-        const arbeitnowJobs  = arbeitnowRes.status  === 'fulfilled' ? arbeitnowRes.value  : [];
-        const activeJobs     = activeRes.status     === 'fulfilled' ? activeRes.value     : [];
-        const jsearchJobs    = jsearchRes.status    === 'fulfilled' ? jsearchRes.value    : [];
-        const unstopJobs     = unstopRes.status     === 'fulfilled' ? unstopRes.value     : [];
-
         // Filter for India only (except local jobs)
-        const indiaArbeitnow  = arbeitnowJobs.filter(j => j.location?.toLowerCase().includes('india'));
-        const indiaActiveJobs = activeJobs.filter(j => j.location?.toLowerCase().includes('india'));
-        const indiaJSearch    = jsearchJobs.filter(j => j.location?.toLowerCase().includes('india'));
-        const indiaUnstop     = unstopJobs.filter(j =>
-            j.location?.toLowerCase().includes('india') || j.location === 'Remote'
-        );
+        const indiaArbeitnow = arbeitnowJobs.filter(job => job.location.toLowerCase().includes('india'));
+        const indiaActiveJobs = activeJobs.filter(job => job.location.toLowerCase().includes('india'));
+        const indiaJSearch = jsearchJobs.filter(job => job.location.toLowerCase().includes('india'));
 
-        // Interleave for a better mix on the feed
+        // Fetch Unstop jobs for main feed
+        const unstopJobs = await fetchUnstopJobs(keyword);
+        const indiaUnstop = unstopJobs.filter(job => job.location.toLowerCase().includes('india') || job.location === 'Remote');
+
+        // Combine all jobs - interleave them for better mix
         const allJobs = [];
         const maxLength = Math.max(
-            localJobs.length, indiaUnstop.length,
-            indiaJSearch.length, indiaArbeitnow.length, indiaActiveJobs.length
+            localJobs.length,
+            indiaArbeitnow.length,
+            indiaActiveJobs.length,
+            indiaJSearch.length,
+            indiaUnstop.length
         );
 
         for (let i = 0; i < maxLength; i++) {
-            if (localJobs[i])      allJobs.push(localJobs[i]);
-            if (indiaUnstop[i])    allJobs.push(indiaUnstop[i]);
-            if (indiaJSearch[i])   allJobs.push(indiaJSearch[i]);
+            if (localJobs[i]) allJobs.push(localJobs[i]);
+            if (indiaUnstop[i]) allJobs.push(indiaUnstop[i]);
+            if (indiaJSearch[i]) allJobs.push(indiaJSearch[i]);
             if (indiaArbeitnow[i]) allJobs.push(indiaArbeitnow[i]);
             if (indiaActiveJobs[i]) allJobs.push(indiaActiveJobs[i]);
         }
 
-        setCache(cacheKey, allJobs); // cache for 2 min
-        return res.status(200).json({ jobs: allJobs, success: true });
+        return res.status(200).json({
+            jobs: allJobs,
+            success: true
+        })
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal server error", success: false });
@@ -359,7 +324,7 @@ const fetchUnstopJobs = async (keyword) => {
         return items.map((item) => ({
             _id: `ext_us_${item.id}`,
             title: item.title || 'Untitled',
-            description: stripHtmlTags(item.details || item.description || item.short_description || 'No description.'),
+            description: item.details || item.description || item.short_description || 'No description.',
             requirements: item.required_skills?.map(s => s.skill_name) || [],
             salary: item.jobDetail?.show_salary ? `${item.jobDetail.min_salary || ''} - ${item.jobDetail.max_salary || ''} ${item.jobDetail.currency || ''}` : 'N/A',
             experienceLevel: 0,

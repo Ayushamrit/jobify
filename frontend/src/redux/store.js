@@ -17,7 +17,7 @@ import applicationSlice from "./applicationSlice";
 
 const persistConfig = {
     key: 'root',
-    version: 2,  // bumped from 1 → forces re-init with new filters shape
+    version: 1,
     storage,
 }
 

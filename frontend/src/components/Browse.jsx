@@ -6,27 +6,22 @@ import { setSearchedQuery } from '@/redux/jobSlice';
 import useGetAllJobs from '@/hooks/useGetAllJobs';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
-import { JobSkeletonGrid } from './shared/JobSkeleton';
 
 const Browse = () => {
     useGetAllJobs();
-
-    // Safe defaults
-    const allJobs = useSelector(store => store.job.allJobs) || [];
-    const isLoading = useSelector(store => store.job.isLoading) || false;
+    const { allJobs } = useSelector(store => store.job);
     const dispatch = useDispatch();
 
     useEffect(() => {
         return () => {
             dispatch(setSearchedQuery(""));
-        };
+        }
     }, []);
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
             <Navbar />
             <div className='max-w-7xl mx-auto px-4 lg:px-6 py-10'>
-
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -39,16 +34,12 @@ const Browse = () => {
                         </div>
                         <div>
                             <h1 className='text-2xl font-bold text-gray-900 dark:text-white'>Search Results</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {isLoading ? 'Searching...' : `${allJobs.length} jobs found`}
-                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{allJobs.length} jobs found</p>
                         </div>
                     </div>
                 </motion.div>
 
-                {isLoading ? (
-                    <JobSkeletonGrid count={6} />
-                ) : allJobs.length === 0 ? (
+                {allJobs.length === 0 ? (
                     <div className="text-center py-24">
                         <div className="text-7xl mb-5">🔍</div>
                         <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">No jobs found</h3>
@@ -61,7 +52,7 @@ const Browse = () => {
                                 key={job._id}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.4) }}
+                                transition={{ duration: 0.4, delay: index * 0.06 }}
                             >
                                 <Job job={job} />
                             </motion.div>
@@ -70,7 +61,7 @@ const Browse = () => {
                 )}
             </div>
         </div>
-    );
+    )
 }
 
 export default Browse

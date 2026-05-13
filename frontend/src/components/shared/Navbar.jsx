@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { Button } from '../ui/button'
-import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar'
+import { Avatar, AvatarImage } from '../ui/avatar'
 import { LogOut, User2, Moon, Sun, Bookmark, BriefcaseBusiness, TrendingUp } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
@@ -9,20 +9,6 @@ import axios from 'axios'
 import { USER_API_END_POINT } from '@/utils/constant'
 import { setUser } from '@/redux/authSlice'
 import { toast } from 'sonner'
-
-// Generate a consistent color for a given name
-const getAvatarColor = (name = '') => {
-    const colors = [
-        'from-[#6A38C2] to-[#8B5CF6]',
-        'from-[#F83002] to-[#f97316]',
-        'from-[#0ea5e9] to-[#6366f1]',
-        'from-[#10b981] to-[#06b6d4]',
-        'from-[#f59e0b] to-[#ef4444]',
-        'from-[#8b5cf6] to-[#ec4899]',
-    ];
-    const idx = name.charCodeAt(0) % colors.length;
-    return colors[idx];
-};
 
 const Navbar = () => {
     const { user } = useSelector(store => store.auth);
@@ -60,10 +46,6 @@ const Navbar = () => {
             toast.error(error?.response?.data?.message || 'Logout failed. Try again.');
         }
     }
-
-    // First letter of name for avatar fallback
-    const avatarInitial = user?.fullname?.charAt(0)?.toUpperCase() || '?';
-    const avatarGradient = getAvatarColor(user?.fullname || '');
 
     return (
         <header className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -134,28 +116,18 @@ const Navbar = () => {
                                 <PopoverTrigger asChild>
                                     <Avatar className="cursor-pointer ring-2 ring-[#6A38C2]/30 hover:ring-[#6A38C2] transition-all duration-200 hover:scale-105">
                                         <AvatarImage src={user?.profile?.profilePhoto} alt={user?.fullname} />
-                                        {/* Fallback: show first letter in gradient circle */}
-                                        <AvatarFallback className={`bg-gradient-to-br ${avatarGradient} text-white font-bold text-sm`}>
-                                            {avatarInitial}
-                                        </AvatarFallback>
                                     </Avatar>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-80 p-0 border-0 shadow-2xl rounded-2xl overflow-hidden dark:bg-gray-900">
                                     {/* Header */}
                                     <div className='bg-gradient-to-r from-[#6A38C2] to-[#8B5CF6] p-4'>
                                         <div className='flex gap-3 items-center'>
-                                            <Avatar className="ring-2 ring-white/40 w-12 h-12">
+                                            <Avatar className="ring-2 ring-white/40">
                                                 <AvatarImage src={user?.profile?.profilePhoto} alt={user?.fullname} />
-                                                <AvatarFallback className={`bg-gradient-to-br ${avatarGradient} text-white font-bold`}>
-                                                    {avatarInitial}
-                                                </AvatarFallback>
                                             </Avatar>
                                             <div>
                                                 <h4 className='font-semibold text-white'>{user?.fullname}</h4>
                                                 <p className='text-xs text-white/70'>{user?.profile?.bio || 'No bio added yet'}</p>
-                                                <span className='text-xs bg-white/20 text-white px-2 py-0.5 rounded-full mt-1 inline-block capitalize'>
-                                                    {user?.role === 'student' ? '🎓 Job Seeker' : '🏢 Recruiter'}
-                                                </span>
                                             </div>
                                         </div>
                                     </div>
