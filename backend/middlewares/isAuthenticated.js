@@ -4,6 +4,9 @@ const isAuthenticated = async (req, res, next) => {
     try {
         let token = req.cookies.token || req.headers.authorization?.split(" ")[1];
         
+        console.log("DEBUG: Token received:", token ? "YES (Exists)" : "NO (Missing)");
+        console.log("DEBUG: Headers:", req.headers.authorization ? "Bearer present" : "No Bearer");
+
         if (!token) {
             return res.status(401).json({
                 message: "User not authenticated",

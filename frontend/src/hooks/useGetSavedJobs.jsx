@@ -12,7 +12,11 @@ const useGetSavedJobs = () => {
         const fetchSavedJobs = async () => {
             if (!user) return;
             try {
-                const res = await axios.get(`${SAVED_JOB_API_END_POINT}/get`, { withCredentials: true });
+                const token = localStorage.getItem("jobify-token");
+                const res = await axios.get(`${SAVED_JOB_API_END_POINT}/get`, { 
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    withCredentials: true 
+                });
                 if (res.data.success) {
                     dispatch(setSavedJobs(res.data.savedJobs));
                 }

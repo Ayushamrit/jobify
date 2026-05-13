@@ -79,7 +79,16 @@ const AIAssistant = () => {
         setLoading(true);
 
         try {
-            const res = await axios.post(`${AI_API_END_POINT}/chat`, { message: userMsg }, { withCredentials: true });
+            const token = localStorage.getItem("jobify-token");
+            const res = await axios.post(`${AI_API_END_POINT}/chat`, 
+                { prompt: userMsg }, 
+                { 
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    withCredentials: true 
+                }
+            );
             if (res.data.success) {
                 setMessages(prev => [...prev, { role: 'ai', text: res.data.reply, id: Date.now() + 1 }]);
             }
