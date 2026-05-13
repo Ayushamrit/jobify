@@ -15,16 +15,22 @@ dotenv.config({});
 
 const app = express();
 
+app.set('trust proxy', 1); // Trust the first proxy (Render/Vercel)
+
+const corsOptions = {
+    origin: 'https://jobify-ap2s.vercel.app',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight
+
 // middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-const corsOptions = {
-    origin: true,
-    credentials: true
-};
-
-app.use(cors(corsOptions));
 
 const PORT = process.env.PORT || 3000;
 
