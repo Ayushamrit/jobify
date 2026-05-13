@@ -88,9 +88,7 @@ const Job = ({ job }) => {
             }
         } catch (error) {
             console.log("SAVE ERROR:", error);
-            const errorMsg = error.response?.data?.message || error.message || "Something went wrong";
-            alert("DEBUG SAVE ERROR: " + errorMsg);
-            toast.error(errorMsg);
+            toast.error(error.response?.data?.message || error.message || "Something went wrong");
         }
     };
 

@@ -95,7 +95,6 @@ const AIAssistant = () => {
         } catch (error) {
             console.error("AI Error:", error);
             const errMsg = error.response?.data?.message || "I'm having trouble connecting. Please check your internet.";
-            alert("DEBUG AI ERROR: " + errMsg);
             setMessages(prev => [...prev, { role: 'ai', text: `⚠️ ${errMsg}`, id: Date.now() + 1 }]);
         } finally {
             setLoading(false);

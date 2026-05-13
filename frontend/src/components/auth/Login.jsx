@@ -34,7 +34,6 @@ const Login = () => {
             if (res.data.success) {
                 dispatch(setUser(res.data.user));
                 localStorage.setItem("jobify-token", res.data.token); // Store token
-                alert("DEBUG: Standard Token Saved!"); 
                 navigate("/");
                 toast.success(res.data.message);
             }
@@ -70,7 +69,6 @@ const Login = () => {
             if (res.data.success) {
                 dispatch(setUser(res.data.user));
                 localStorage.setItem("jobify-token", res.data.token); // Store token
-                alert("DEBUG: Google Token Saved!");
                 navigate("/");
                 toast.success(res.data.message);
             }
