@@ -81,7 +81,7 @@ const AIAssistant = () => {
         try {
             const token = localStorage.getItem("jobify-token");
             const res = await axios.post(`${AI_API_END_POINT}/chat`, 
-                { prompt: userMsg }, 
+                { message: userMsg }, 
                 { 
                     headers: {
                         'Authorization': `Bearer ${token}`
