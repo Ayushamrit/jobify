@@ -13,7 +13,7 @@ const SavedJobs = () => {
     const { user } = useSelector(store => store.auth);
 
     // Map savedJob metadata to the format expected by the Job component
-    const displayJobs = savedJobs.map(sj => ({
+    const displayJobs = (savedJobs || []).map(sj => ({
         _id: sj.jobId,
         title: sj.title,
         description: "", // Metadata usually enough for the card
