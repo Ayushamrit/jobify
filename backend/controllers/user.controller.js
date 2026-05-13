@@ -49,6 +49,10 @@ export const register = async (req, res) => {
         });
     } catch (error) {
         console.log(error);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        });
     }
 }
 export const login = async (req, res) => {
@@ -259,10 +263,14 @@ export const googleLogin = async (req, res) => {
             }
 
             // Create new user if not exists
+            const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+            const hashedPassword = await bcrypt.hash(randomPassword, 10);
+            
             user = await User.create({
                 fullname,
                 email,
                 phoneNumber: 0, // Placeholder for Google users
+                password: hashedPassword, // Dummy password for Google users
                 role,
                 profile: {
                     profilePhoto: profilePhoto || ""
