@@ -65,10 +65,10 @@ export const login = async (req, res) => {
                 success: false
             });
         };
-        
+
         // Find user by email AND role
         let user = await User.findOne({ email, role });
-        
+
         if (!user) {
             // Check if user exists with the OTHER role to give better feedback
             const existingUserWithOtherRole = await User.findOne({ email });
@@ -106,11 +106,11 @@ export const login = async (req, res) => {
             profile: user.profile
         }
 
-        return res.status(200).cookie("token", token, { 
-            maxAge: 1 * 24 * 60 * 60 * 1000, 
-            httpOnly: true, 
-            sameSite: 'none', 
-            secure: true 
+        return res.status(200).cookie("token", token, {
+            maxAge: 1 * 24 * 60 * 60 * 1000,
+            httpOnly: true,
+            sameSite: 'none',
+            secure: true
         }).json({
             message: `Welcome back ${user.fullname}`,
             user,
@@ -123,7 +123,7 @@ export const login = async (req, res) => {
 }
 export const logout = async (req, res) => {
     try {
-        return res.status(200).cookie("token", "", { 
+        return res.status(200).cookie("token", "", {
             maxAge: 0,
             httpOnly: true,
             sameSite: 'none',
@@ -265,7 +265,7 @@ export const googleLogin = async (req, res) => {
             // Create new user if not exists
             const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
-            
+
             user = await User.create({
                 fullname,
                 email,
@@ -292,11 +292,11 @@ export const googleLogin = async (req, res) => {
             profile: user.profile
         }
 
-        return res.status(200).cookie("token", token, { 
-            maxAge: 1 * 24 * 60 * 60 * 1000, 
-            httpOnly: true, 
-            sameSite: 'none', 
-            secure: true 
+        return res.status(200).cookie("token", token, {
+            maxAge: 1 * 24 * 60 * 60 * 1000,
+            httpOnly: true,
+            sameSite: 'none',
+            secure: true
         }).json({
             message: `Welcome back ${user.fullname}`,
             user: userData,
