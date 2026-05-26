@@ -269,7 +269,7 @@ export const googleLogin = async (req, res) => {
             user = await User.create({
                 fullname,
                 email,
-                phoneNumber: 0, // Placeholder for Google users
+                phoneNumber: "", // Placeholder for Google users
                 password: hashedPassword, // Dummy password for Google users
                 role,
                 profile: {
